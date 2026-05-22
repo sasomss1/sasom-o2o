@@ -703,6 +703,8 @@ function renderSteps() {
   root.innerHTML = '';
   overview.innerHTML = '';
 
+  root.scrollLeft = 0;   // reset carousel position on every rebuild
+
   steps.forEach((s, i) => {
     // ---------- carousel slide ----------
     const el = document.createElement('div');
