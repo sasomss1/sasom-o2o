@@ -186,6 +186,15 @@
     padding: 16px 16px 80px;
     position: relative;
   }
+  /* ── Fixed content height so phone-wrap is always the same size ── */
+  .step-content {
+    flex-shrink: 0;
+    height: 230px;
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .step-content::-webkit-scrollbar { display: none; }
   .step-meta {
     display: flex;
     align-items: center;
@@ -469,6 +478,8 @@
     .step-content {
       flex: 1;
       max-width: 420px;
+      height: auto;        /* override mobile fixed height */
+      overflow-y: visible;
     }
     .step-title { font-size: 32px; margin-bottom: 8px; }
     .step-desc { font-size: 16px; }
@@ -761,6 +772,26 @@ function renderSteps() {
   });
 
   renderDots();
+  setupScrollObserver();
+}
+
+// ── Scroll-position observer: keep dots in sync with swipe ──
+let _obs;
+function setupScrollObserver() {
+  if (_obs) _obs.disconnect();
+  const container = document.getElementById('steps');
+  _obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const i = parseInt(e.target.dataset.index);
+        if (!isNaN(i) && i !== state.index) {
+          state.index = i;
+          renderDots();
+        }
+      }
+    });
+  }, { root: container, threshold: 0.55 });
+  container.querySelectorAll('.step').forEach(el => _obs.observe(el));
 }
 
 function i18nKey(en) {
@@ -846,8 +877,10 @@ document.querySelectorAll('.role-tab').forEach(b => {
     if (state.role === b.dataset.role) return;
     state.role = b.dataset.role;
     state.index = 0;
+    state.mode = 'steps';
     if (state.role === 'buyer') state.section = 'create'; // reset
     persist(); apply();
+    setTimeout(scrollToIndex, 60);
   });
 });
 document.querySelectorAll('.subnav-tab').forEach(b => {
@@ -856,7 +889,9 @@ document.querySelectorAll('.subnav-tab').forEach(b => {
     if (state.section === b.dataset.section) return;
     state.section = b.dataset.section;
     state.index = 0;
+    state.mode = 'steps';
     persist(); apply();
+    setTimeout(scrollToIndex, 60);
   });
 });
 document.querySelectorAll('.mode-btn').forEach(b => {
@@ -868,9 +903,11 @@ document.querySelectorAll('.mode-btn').forEach(b => {
 });
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
-    if (state.lang === b.dataset.setLang) return;
-    state.lang = b.dataset.setLang;
+    const newLang = b.dataset.setLang;
+    if (!newLang || state.lang === newLang) return;
+    state.lang = newLang;
     persist(); apply();
+    setTimeout(scrollToIndex, 60);
   });
 });
 
